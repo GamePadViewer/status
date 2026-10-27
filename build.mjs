@@ -323,7 +323,7 @@ function indexPage(announcements, now) {
 function detailPage(alert) {
   const ongoing = !alert.endsAt;
   return page(
-    `${alert.title} &middot; ${SITE_NAME}`,
+    `${alert.title} · ${SITE_NAME}`,
     `<a class="brand" href="/">${LOGO}<span class="word">status</span></a>
 <span class="tag ${escape(alert.severity)}">${escape(SEVERITY_LABEL[alert.severity])}</span>
 <h1>${escape(alert.title)}</h1>
