@@ -10,7 +10,7 @@ links:
   - label: Cloudflare status
     href: https://www.cloudflarestatus.com
 startsAt: 2026-10-26T14:00:00Z
-endsAt:
+endsAt: 2026-10-27T02:52:46Z
 ---
 
 Saving a controller in the dashboard currently fails. Overlay links that were already
@@ -26,3 +26,8 @@ saving is back.
 
 We are tracking our database provider's own status page, linked above, and will update this
 page when saving works again.
+
+## Resolved
+
+Saving is working again. No action is needed; controllers saved during the incident were not
+affected.
