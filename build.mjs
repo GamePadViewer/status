@@ -15,6 +15,22 @@ const SITE_URL = 'https://status.gamepadviewer.com';
 const SITE_NAME = 'GamePad Viewer status';
 
 /**
+ * The GPV mark, from the dashboard, inlined rather than linked: this page has to render when the
+ * rest of the product does not, so it makes no network request of its own. Monochrome, so it
+ * follows the text colour in both themes.
+ */
+const LOGO_G = 'M76.71,58c-6.9,0-10.36-8.35-5.48-13.23l21.87-21.87c3.37-3.37,2.92-8.95-.93-11.76C82.12,3.79,69.6-.4,56.1,.03,26.05,.99,1.44,25.23,.06,55.26c-1.53,33.28,25,60.74,57.94,60.74,11.32,0,21.88-3.25,30.81-8.87,3.04-1.91,7-1.42,9.54,1.11l5.7,5.7h0c1.37,1.37,3.31,2.18,5.43,2.03,3.73-.25,6.52-3.54,6.52-7.27v-42.96c0-4.28-3.47-7.75-7.75-7.75h-31.54Z';
+const LOGO_P = 'M186.66,0h-51.75c-4.28,0-7.75,3.47-7.75,7.75V108.25c0,4.28,3.47,7.75,7.75,7.75h25.5c4.28,0,7.75-3.47,7.75-7.75v-25.5c0-4.28,3.47-7.75,7.75-7.75h10.01c21.03,0,38.64-17.21,38.23-38.23-.39-20.37-17.03-36.77-37.49-36.77Z';
+const LOGO_V = 'M227.73,11.21l50.33,100.67c2.86,5.71,11.01,5.71,13.86,0L342.27,11.21c2.58-5.15-1.17-11.21-6.93-11.21h-100.67c-5.76,0-9.5,6.06-6.93,11.21Z';
+
+const LOGO = `<svg class="logo" viewBox="0 0 343.09 116.16" role="img" aria-label="GamePad Viewer" focusable="false"><path d="${LOGO_G}"/><path d="${LOGO_P}"/><path d="${LOGO_V}"/></svg>`;
+
+/** The same mark, as the favicon: a data URI, so it cannot 404 and costs no request. */
+const FAVICON = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="160" height="160" rx="34" fill="#0a0a0a"/><path transform="translate(20,22)" fill="#fff" d="${LOGO_G}"/></svg>`
+)}`;
+
+/**
  * Site-wide, and deliberately not part of any alert: this page is where people land when the
  * dashboard itself is unreachable, so it has to carry the ways to reach us on its own.
  */
@@ -172,16 +188,22 @@ const linkList = (links) =>
 const block = (heading, text) => (text ? `<p class="label">${heading}</p><p>${escape(text)}</p>` : '');
 
 const STYLE = `
-:root { --bg:#0f1115; --card:#171a21; --line:#272b35; --text:#e7e9ee; --muted:#9aa3b2;
+:root { --bg:#0a0a0a; --card:#141414; --line:#2a2a2a; --text:#fafafa; --muted:#a1a1aa;
         --info:#4c8dff; --warning:#e9a23b; --outage:#e5534b; color-scheme: dark; }
 @media (prefers-color-scheme: light) {
-  :root { --bg:#f7f8fa; --card:#fff; --line:#e3e6eb; --text:#1b1f27; --muted:#5d6675; color-scheme: light; }
+  :root { --bg:#fafafa; --card:#fff; --line:#e5e5e5; --text:#141414; --muted:#6b7280; color-scheme: light; }
 }
 * { box-sizing: border-box; }
 body { margin:0; padding:32px 16px 64px; background:var(--bg); color:var(--text);
        font:16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 main { max-width: 680px; margin: 0 auto; }
 h1 { font-size: 1.5rem; margin: 0 0 24px; }
+.brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:-.01em; }
+.brand .logo { height:1.05em; width:auto; fill:currentColor; display:block; }
+.brand .word { color:var(--muted); font-weight:500; }
+h1.brand { margin:0 0 26px; }
+a.brand { display:flex; width:fit-content; font-size:1rem; text-decoration:none; margin-bottom:22px; color:var(--muted); }
+a.brand .logo { fill:var(--muted); }
 h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
      margin: 32px 0 12px; }
 a { color: inherit; }
@@ -208,8 +230,7 @@ a { color: inherit; }
 .archive time { color:var(--muted); white-space:nowrap; flex:0 0 7.5em; }
 footer { margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted);
          font-size:.9rem; }
-footer a { margin-right:14px; }
-.back { display:inline-block; color:var(--muted); text-decoration:none; margin-bottom:20px; }
+footer a { display:inline-block; margin-right:14px; white-space:nowrap; }
 .body { margin-top:8px; border-top:1px solid var(--line); padding-top:20px; }
 `;
 
@@ -218,13 +239,29 @@ const footer = () =>
     ({ label, href }) => `<a href="${escape(href)}" rel="noopener">${escape(label)}</a>`
   ).join('')}</footer>`;
 
-const page = (title, body) => `<!doctype html>
+/** Trimmed for the places that show a page's description: search results, and a Discord unfurl. */
+const summarise = (text) => (text.length > 180 ? `${text.slice(0, 177).trimEnd()}...` : text);
+
+const page = (title, body, { description, url = SITE_URL }) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
 <meta name="robots" content="index,follow">
+<meta name="description" content="${escape(summarise(description))}">
+<link rel="canonical" href="${escape(url)}">
+<link rel="icon" href="${escape(FAVICON)}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="${SITE_URL}/icon-256.png">
+<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+<meta property="og:site_name" content="${escape(SITE_NAME)}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${escape(title)}">
+<meta property="og:description" content="${escape(summarise(description))}">
+<meta property="og:url" content="${escape(url)}">
+<meta property="og:image" content="${SITE_URL}/icon-256.png">
+<meta name="twitter:card" content="summary">
 <style>${STYLE}</style>
 </head>
 <body><main>${body}${footer()}</main></body>
@@ -272,14 +309,22 @@ function indexPage(announcements, now) {
         .join('')}</ul>`
     : '';
 
-  return page(SITE_NAME, `<h1>${SITE_NAME}</h1>${current}${archive}`);
+  const description = active.length
+    ? `${active.length} active alert${active.length === 1 ? '' : 's'}: ${active
+        .map((alert) => alert.title)
+        .join(' \u00b7 ')}`
+    : 'All GamePad Viewer systems normal.';
+
+  return page(SITE_NAME, `<h1 class="brand">${LOGO}<span class="word">status</span></h1>${current}${archive}`, {
+    description
+  });
 }
 
 function detailPage(alert) {
   const ongoing = !alert.endsAt;
   return page(
     `${alert.title} &middot; ${SITE_NAME}`,
-    `<a class="back" href="/">&larr; ${SITE_NAME}</a>
+    `<a class="brand" href="/">${LOGO}<span class="word">status</span></a>
 <span class="tag ${escape(alert.severity)}">${escape(SEVERITY_LABEL[alert.severity])}</span>
 <h1>${escape(alert.title)}</h1>
 <p class="when">Started ${escape(formatDate(alert.startsAt))}${
@@ -287,7 +332,8 @@ function detailPage(alert) {
     }</p>
 ${block('What you can do', alert.workaround)}
 ${alert.links.length ? '<p class="label">Links</p>' : ''}${linkList(alert.links)}
-<div class="body">${marked.parse(alert.body)}</div>`
+<div class="body">${marked.parse(alert.body)}</div>`,
+    { description: alert.summary, url: detailUrlFor(alert) ?? SITE_URL }
   );
 }
 
