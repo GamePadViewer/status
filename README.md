@@ -54,13 +54,22 @@ everyone.
 
 ## How long it takes to go live
 
-GitHub Pages serves `cache-control: max-age=600`, and that is not configurable, so an alert can take
-**up to 10 minutes** to reach everyone. The products poll every 60 seconds, so once the CDN has it,
-open tabs pick it up within a minute.
+**About 30 seconds from `git push`**, and roughly 90 seconds to a tab that is already open.
 
-If that is too slow, proxy `status.gamepadviewer.com` through Cloudflare (DNS set to proxied) and add
-a Cache Rule overriding the edge TTL for `/alerts.json` to 30 seconds. That keeps the hosting here
-and brings propagation down without another platform.
+Measured on a real change: pushed at 02:53:03, the Deploy workflow ran 02:53:05 to 02:53:31, and the
+live file changed 32 seconds after the push — about a second after the deploy finished. Deploying is
+the whole cost.
+
+GitHub Pages serves `cache-control: max-age=600` and gives no way to change it, but that does not
+delay a release: publishing purges the CDN, which is why the new file was served immediately. The
+600 seconds only ever applied to browsers reusing their own cache, and the dashboard and overlay
+both fetch with `cache: 'no-store'`, so they never do.
+
+A tab someone already has open adds its polling interval on top — the dashboard refetches every 60
+seconds and on window focus — so worst case is about a minute and a half. A tab opened after the
+deploy sees it at once.
+
+Don't bother putting a CDN in front of this to speed it up; there is nothing to gain.
 
 ## What reads this
 
