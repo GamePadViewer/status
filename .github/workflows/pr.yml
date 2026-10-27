@@ -1,0 +1,35 @@
+name: Validate
+
+# The same build the deploy runs, before it can reach main. A green check here means the Deploy
+# workflow will not be the thing that discovers a broken announcement.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: node build.mjs
+      - name: Check the feed the products read
+        run: |
+          node -e "
+            const feed = JSON.parse(require('node:fs').readFileSync('dist/alerts.json', 'utf8'));
+            if (feed.schema !== 'gpv-status/1') throw new Error('alerts.json has the wrong schema');
+            if (!Array.isArray(feed.alerts)) throw new Error('alerts.json has no alerts array');
+            console.log(\`alerts.json is valid, with \${feed.alerts.length} announcement(s)\`);
+          "
+          test -f dist/index.html || { echo 'no index.html was built'; exit 1; }
