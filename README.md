@@ -12,6 +12,9 @@ One file per incident, in `announcements/`, named `YYYY-MM-DD-short-description.
 every file into `alerts.json` and a page of its own, so **never hand-edit `alerts.json`** — it is
 generated, and `dist/` is not committed.
 
+Copy `announcements/_example.md` to start. Files whose name begins with `_` are skipped by the
+build, so the template never becomes an incident.
+
 ```md
 ---
 id: controller-saving-down            # stable, and what dismissal is keyed on — see below
@@ -48,9 +51,19 @@ the "Resolved" list. Keep the file: it is the incident archive.
 
 ### Changing an alert that is already live
 
-Edit the same file and push. Keep the `id` the same unless you want people who dismissed it to see
-it again — dismissal in the dashboard is keyed on `id`, so a new `id` means a fresh alert to
-everyone.
+Edit the same file and push. Keep the `id`: the dashboard remembers dismissals against it, and that
+is what stops an alert someone has already read coming back every time you reword it.
+
+Raising the `severity` shows it again to everyone, including people who had dismissed it, because a
+dismissal only counts for the severity it was made at. Lowering it does not. So an incident that
+gets worse speaks up on its own, and you only need a new `id` when you genuinely mean a new
+incident.
+
+### Scheduling one
+
+`startsAt` and `endsAt` are honoured on the clock, so an alert can be published ahead of time: the
+dashboard shows it the moment its window opens and drops it the moment the window closes, with no
+further push from you. Useful for planned maintenance.
 
 ## How long it takes to go live
 
