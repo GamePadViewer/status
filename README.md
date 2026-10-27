@@ -40,7 +40,9 @@ npm install          # first time only
 node build.mjs       # fails loudly, and lists every problem, if anything is wrong
 git checkout -b status/controller-saving-down
 git add -A && git commit -m "status: controller saving is down" && git push -u origin HEAD
-gh pr create --fill && gh pr merge --squash --delete-branch
+gh pr create --fill
+gh pr checks --watch                      # the Validate run, about 12 seconds
+gh pr merge --squash --delete-branch
 ```
 
 `main` is protected: it takes a pull request, and the **Validate** workflow — the same build, run
@@ -79,11 +81,15 @@ further push from you. Useful for planned maintenance.
 
 ## How long it takes to go live
 
-**About 30 seconds from `git push`**, and roughly 90 seconds to a tab that is already open.
+**About 30 seconds from the merge**, and roughly 90 seconds to a tab that is already open.
 
 Measured on a real change: pushed at 02:53:03, the Deploy workflow ran 02:53:05 to 02:53:31, and the
 live file changed 32 seconds after the push — about a second after the deploy finished. Deploying is
 the whole cost.
+
+A pull request adds the **Validate** run ahead of that — 12 seconds, measured on the PR that
+introduced it — so an alert published the normal way is live about three quarters of a minute after
+you open the PR. An admin pushing straight to `main` is back to the 30 seconds above.
 
 GitHub Pages serves `cache-control: max-age=600` and gives no way to change it, but that does not
 delay a release: publishing purges the CDN, which is why the new file was served immediately. The
