@@ -110,10 +110,16 @@ Don't bother putting a CDN in front of this to speed it up; there is nothing to 
 | Dashboard "Report a Bug" | Every active alert, before the bug tracker opens |
 | Overlay support panel | Every active alert, as health checks, and in the copied report |
 
-`alerts.json` is `{ "schema": "gpv-status/1", "alerts": [...] }`. The readers validate it and treat
-anything unexpected as no alerts at all, so a malformed or unreachable file degrades to silence
-rather than breaking a page. The canonical schema lives in the `gpv` repository, at
-`packages/data/lib/announcement.ts`; if you change the shape, change it in both places.
+`alerts.json` is `{ "schema": "gpv-status/1", "alerts": [...] }`, and it carries only what a reader
+could act on: every incident still open or still to come, plus anything resolved in the last 30 days.
+The archive grows on the index page instead, which keeps every incident forever — no reason to make
+every dashboard and overlay download years of history none of them shows.
+
+A reader checks the envelope strictly and then each alert on its own, keeping the ones it
+understands. An unreachable file, an unknown `schema` version or a malformed entry all degrade to
+silence rather than breaking a page, and one bad entry costs only itself. The canonical schema lives
+in the `gpv` repository, at `packages/data/lib/announcement.ts`; if you change the shape, change it in
+both places.
 
 ## Layout
 

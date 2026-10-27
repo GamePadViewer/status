@@ -47,6 +47,17 @@ const SEVERITY_LABEL = { info: 'Info', warning: 'Warning', outage: 'Outage' };
 
 const LIMITS = { title: 120, summary: 500, workaround: 200, id: 64, label: 60, links: 5 };
 
+/**
+ * How long a resolved incident stays in alerts.json. Nothing reading the feed ever shows a resolved
+ * alert — the dashboard and the overlay both check the window themselves — so this is slack for a
+ * reader whose clock is behind, and enough history to make curling the feed worth it. The index page
+ * is unaffected and keeps every incident forever.
+ */
+const FEED_RESOLVED_DAYS = 30;
+
+/** Mirrors MAX_ALERTS in the apps' packages/data/lib/announcement.ts, which ignores anything past it. */
+const MAX_FEED_ALERTS = 50;
+
 const problems = [];
 
 /** Collects every problem rather than stopping at the first, so one run tells you all of them. */
@@ -177,6 +188,25 @@ const formatDate = (value) =>
 
 const isActive = (alert, now) =>
   Date.parse(alert.startsAt) <= now && (!alert.endsAt || Date.parse(alert.endsAt) > now);
+
+/**
+ * The alerts worth sending to the dashboard and the overlay: everything still open or still to come,
+ * and anything resolved recently. Filtered on the end rather than the start, so an incident that is
+ * scheduled but has not begun is still sent and its reader can show it when the window opens.
+ */
+const feedAlerts = (announcements, now) => {
+  const cutoff = now - FEED_RESOLVED_DAYS * 24 * 60 * 60 * 1000;
+  const worthSending = announcements.filter(({ endsAt }) => !endsAt || Date.parse(endsAt) > cutoff);
+
+  if (worthSending.length > MAX_FEED_ALERTS) {
+    console.warn(
+      `\n${worthSending.length} incidents are open or recent, over the ${MAX_FEED_ALERTS} a reader will take.` +
+        ` Sending the newest ${MAX_FEED_ALERTS}.\n`
+    );
+  }
+
+  return worthSending.slice(0, MAX_FEED_ALERTS);
+};
 
 const linkList = (links) =>
   links.length === 0
@@ -369,9 +399,11 @@ async function main() {
   await rm(DIST, { recursive: true, force: true });
   await mkdir(DIST, { recursive: true });
 
+  // The feed is only what a reader can act on; the pages below keep the whole archive
+  const feed = feedAlerts(announcements, now);
   await writeFile(
     join(DIST, 'alerts.json'),
-    `${JSON.stringify({ schema: 'gpv-status/1', alerts: announcements.map(toAlert) }, null, 2)}\n`
+    `${JSON.stringify({ schema: 'gpv-status/1', alerts: feed.map(toAlert) }, null, 2)}\n`
   );
   await writeFile(join(DIST, 'index.html'), indexPage(announcements, now));
 
@@ -388,7 +420,9 @@ async function main() {
   }
 
   const active = announcements.filter((alert) => isActive(alert, now)).length;
-  console.log(`Built ${announcements.length} announcement(s), ${active} active, into dist/`);
+  console.log(
+    `Built ${announcements.length} announcement(s), ${active} active, ${feed.length} in the feed, into dist/`
+  );
 }
 
 main().catch((error) => {
