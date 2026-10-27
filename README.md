@@ -38,11 +38,23 @@ Then:
 ```bash
 npm install          # first time only
 node build.mjs       # fails loudly, and lists every problem, if anything is wrong
-git add -A && git commit -m "status: controller saving is down" && git push
+git checkout -b status/controller-saving-down
+git add -A && git commit -m "status: controller saving is down" && git push -u origin HEAD
+gh pr create --fill && gh pr merge --squash --delete-branch
 ```
 
-Pushing to `main` runs the **Deploy** workflow. **If the build fails, nothing is deployed and the
-previous version stays live** — which is also why the build is worth running before you push.
+`main` is protected: it takes a pull request, and the **Validate** workflow — the same build, run
+against the PR — has to pass before it can merge. Merging then runs the **Deploy** workflow. **If
+the build fails, nothing is deployed and the previous version stays live** — which is also why the
+build is worth running before you push.
+
+### When something is actually on fire
+
+Repository admins can still push straight to `main`, and that is deliberate: this site exists to
+say something within seconds, and a PR round trip is the wrong thing to owe an audience that is
+already looking at breakage. Use it when the delay genuinely matters — and run `node build.mjs`
+first, because the failure mode of skipping it is silent. A bad file fails the deploy, the previous
+page stays live, and the alert you were in a hurry to publish simply never appears.
 
 ### Resolving an alert
 
@@ -102,6 +114,6 @@ rather than breaking a page. The canonical schema lives in the `gpv` repository,
 ```
 announcements/        one markdown file per incident
 build.mjs             validates frontmatter, writes dist/
-public/               copied verbatim into dist/ (CNAME, .nojekyll)
-.github/workflows/    the Pages deploy
+public/               copied verbatim into dist/ (CNAME, .nojekyll, the icon)
+.github/workflows/    the PR check, and the Pages deploy
 ```
