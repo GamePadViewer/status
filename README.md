@@ -20,7 +20,7 @@ build, so the template never becomes an incident.
 id: controller-saving-down            # stable, and what dismissal is keyed on — see below
 severity: outage                      # info | warning | outage
 title: Controller saving is down
-summary: One or two sentences. Shown in the dashboard banner and the overlay's support panel.
+summary: The symptom first, in a sentence that stands alone — see below
 workaround: One line on what the reader can do right now. Optional.
 links:                                # optional, up to 5, all https
   - label: PlanetScale status
@@ -49,6 +49,25 @@ gh pr merge --squash --delete-branch
 against the PR — has to pass before it can merge. Merging then runs the **Deploy** workflow. **If
 the build fails, nothing is deployed and the previous version stays live** — which is also why the
 build is worth running before you push.
+
+### Writing a summary
+
+The summary travels further than anything else in the file, and the surface that reaches the most
+people shows the least of it. In the dashboard it is a toast: the title, then about three lines of
+summary on desktop and two on a phone, clamped, with the rest a press away. The alert panel, the
+"Report a Bug" interstitial, the card on this site and the overlay's support panel all show it
+whole.
+
+So lead with the symptom, in one sentence that stands on its own — what breaks, and where someone
+sees it. Use the rest for what that sentence earns. Past about 200 characters the build says so,
+as a note rather than a failure, because nothing about prose length should hold up a status page
+mid-incident.
+
+Two things don't belong in it:
+
+- **The workaround.** Every surface that shows the summary renders `workaround` directly beneath
+  it, so a fix written into both reads twice.
+- **The long version.** That is what the body is for, and it is the one field with no limit.
 
 ### When something is actually on fire
 
@@ -106,9 +125,14 @@ Don't bother putting a CDN in front of this to speed it up; there is nothing to 
 
 | Reader | What it shows |
 | --- | --- |
-| Dashboard banner | The loudest active alert, with its workaround and first link |
+| Dashboard toast | The loudest active alert: its title, and the first two or three lines of its summary |
+| Dashboard alert panel | That same alert whole — summary, workaround and every link — one press from the toast |
 | Dashboard "Report a Bug" | Every active alert, before the bug tracker opens |
 | Overlay support panel | Every active alert, as health checks, and in the copied report |
+
+A phone's toast opens the panel, since sending someone to another tab mid-task is too much. On
+desktop it links here instead when the incident has a page of its own, and opens the panel when it
+does not.
 
 `alerts.json` is `{ "schema": "gpv-status/1", "alerts": [...] }`, and it carries only what a reader
 could act on: every incident still open or still to come, plus anything resolved in the last 30 days.

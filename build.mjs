@@ -48,6 +48,16 @@ const SEVERITY_LABEL = { info: 'Info', warning: 'Warning', outage: 'Outage' };
 const LIMITS = { title: 120, summary: 500, workaround: 200, id: 64, label: 60, links: 5 };
 
 /**
+ * Roughly how much of a summary the dashboard's toast shows: it clamps to three lines on desktop
+ * and two on a phone. Past this a summary is still shown whole everywhere else — the alert panel,
+ * the "Report a Bug" interstitial, the overlay's support panel and the card on this site — but the
+ * toast is where most people meet an incident, so a summary that needs its second half to make
+ * sense is one most readers will only half read. A note rather than a failure: nothing about prose
+ * length should hold up a status page mid-incident.
+ */
+const SUMMARY_CLAMPED_AT = 200;
+
+/**
  * How long a resolved incident stays in alerts.json. Nothing reading the feed ever shows a resolved
  * alert — the dashboard and the overlay both check the window themselves — so this is slack for a
  * reader whose clock is behind, and enough history to make curling the feed worth it. The index page
@@ -59,9 +69,20 @@ const FEED_RESOLVED_DAYS = 30;
 const MAX_FEED_ALERTS = 50;
 
 const problems = [];
+const notes = [];
 
 /** Collects every problem rather than stopping at the first, so one run tells you all of them. */
 const fail = (file, message) => problems.push(`${file}: ${message}`);
+
+/** Worth saying, but never worth refusing to publish over. Printed once the run is done. */
+const note = (file, message) => notes.push(`${file}: ${message}`);
+
+const printNotes = () => {
+  if (notes.length === 0) return;
+  console.warn('\nWorth a look, though none of this stopped the build:\n');
+  for (const message of notes) console.warn(`  - ${message}`);
+  console.warn('');
+};
 
 const isHttps = (value) => {
   try {
@@ -92,7 +113,7 @@ function validate(file, data, body) {
 
   const text = (value, field, max, required) => {
     if (value === undefined || value === null || value === '') {
-      if (required) fail(file, `needs a ${field}`);
+      if (required) fail(file, `needs ${field}`);
       return undefined;
     }
     if (typeof value !== 'string') {
@@ -129,7 +150,7 @@ function validate(file, data, body) {
     }
   }
 
-  return {
+  const alert = {
     id: text(id, 'an id', LIMITS.id, true),
     severity,
     title: text(title, 'a title', LIMITS.title, true),
@@ -140,6 +161,17 @@ function validate(file, data, body) {
     endsAt: endsAt === '' || endsAt === undefined ? null : endsAt,
     body
   };
+
+  if (alert.summary && alert.summary.length > SUMMARY_CLAMPED_AT) {
+    note(
+      file,
+      `the summary is ${alert.summary.length} characters and the dashboard's toast shows about ` +
+        `${SUMMARY_CLAMPED_AT}. Lead with the symptom in a sentence that stands on its own, and ` +
+        'leave the workaround to its own field and the long version to the body.'
+    );
+  }
+
+  return alert;
 }
 
 async function readAnnouncements() {
@@ -392,6 +424,7 @@ async function main() {
 
   if (checkOnly) {
     console.log(`${announcements.length} announcement(s) look fine.`);
+    printNotes();
     return;
   }
 
@@ -423,6 +456,7 @@ async function main() {
   console.log(
     `Built ${announcements.length} announcement(s), ${active} active, ${feed.length} in the feed, into dist/`
   );
+  printNotes();
 }
 
 main().catch((error) => {
