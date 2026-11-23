@@ -5,8 +5,8 @@ title: OBS 33 stops showing controller input while another app is focused
 summary: On OBS 33.0.0 and 33.0.1, controller input stopped showing on the overlay whenever another app had focus. OBS fixed it in 33.0.2, so updating OBS clears it.
 workaround: Update OBS to 33.0.3 or later.
 links:
-  - label: OBS 32.2.2 release
-    href: https://github.com/obsproject/obs-studio/releases/tag/32.2.2
+  - label: OBS 33.0.3 release
+    href: https://github.com/obsproject/obs-studio/releases/tag/33.0.3
   - label: OBS issue 14083
     href: https://github.com/obsproject/obs-studio/issues/14083
 startsAt: 2026-10-23T22:20:29Z
