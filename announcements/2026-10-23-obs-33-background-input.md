@@ -2,15 +2,15 @@
 id: obs-33-background-input
 severity: warning
 title: OBS 33 stops showing controller input while another app is focused
-summary: On OBS 33.0.0, the overlay stops updating as soon as another application takes focus, so controller input does not appear on stream while you are playing. This is a change in OBS rather than in GamePad Viewer, and it is already reported upstream, so there is no need to file a bug. Running OBS as administrator clears it for most setups; downgrading to OBS 32.2.2 is the fallback.
-workaround: Run OBS as administrator. If that does not help, downgrade to OBS 32.2.2.
+summary: On OBS 33.0.0 and 33.0.1, controller input stopped showing on the overlay whenever another app had focus. OBS fixed it in 33.0.2, so updating OBS clears it.
+workaround: Update OBS to 33.0.3 or later.
 links:
   - label: OBS 32.2.2 release
     href: https://github.com/obsproject/obs-studio/releases/tag/32.2.2
   - label: OBS issue 14083
     href: https://github.com/obsproject/obs-studio/issues/14083
 startsAt: 2026-10-23T22:20:29Z
-endsAt:
+endsAt: 2026-11-20T14:15:30Z
 ---
 
 GamePad Viewer renders in an OBS browser source. From OBS 33.0.0 on, a browser source stops
@@ -34,3 +34,13 @@ upstream issue rather than working around it in the overlay. It is open, and fil
 with the same symptom.
 
 We will update this page as that moves, and resolve it once a fixed OBS release is out.
+
+## Resolved, 23 November
+
+OBS fixed this in 33.0.2, released on 20 November. Its release notes list the fix for controller
+input in browser sources stopping when OBS loses focus, on both Windows and macOS. OBS 33.0.3
+followed on 21 November to fix a crash in 33.0.2 on some older CPUs, so update straight to 33.0.3
+or later.
+
+Once you have updated, the overlay keeps moving while you play, and there is no need to run OBS as
+administrator or stay on OBS 32.2.2.
